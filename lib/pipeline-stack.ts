@@ -12,10 +12,6 @@ export interface PipelineStackProps extends StackProps {
   owner: string;
   // e.g. dev, test, prod, etc
   stageName: string;
-  // AWS Account
-  account: string;
-  // AWS Region
-  region: string;
   // Application stages to add to the pipeline
   applicationStages?: ApplicationStageConfig[];
 }
