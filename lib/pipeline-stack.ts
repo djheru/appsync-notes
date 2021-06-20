@@ -1,5 +1,5 @@
-import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
-import { Artifact } from '@aws-cdk/aws-codepipeline';
+import { Construct, SecretValue, Stack, StackProps, Stage } from '@aws-cdk/core';
+import { Action, Artifact } from '@aws-cdk/aws-codepipeline';
 import { CdkPipeline, SimpleSynthAction } from '@aws-cdk/pipelines';
 import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 
@@ -16,8 +16,13 @@ export interface PipelineStackProps extends StackProps {
   account: string;
   // AWS Region
   region: string;
-  // An array of bash commands that can be executed to test the deployment
-  testCommands?: string[];
+  // Application stages to add to the pipeline
+  applicationStages?: ApplicationStageConfig[];
+}
+
+export interface ApplicationStageConfig {
+  stage: Stage;
+  actions?: Action[];
 }
 
 export class PipelineStack extends Stack {
@@ -39,10 +44,17 @@ export class PipelineStack extends Stack {
   // Pipeline name
   private pipelineName: string;
 
+  private applicationStages: ApplicationStageConfig[] = [];
+
   constructor(scope: Construct, id: string, props: PipelineStackProps) {
     super(scope, id, props);
     this.props = props;
     this.pipelineName = `${props.repo}-${props.stageName}`;
+
+    // Application stages can be specified at instantiation or after, using registerApplicationStage
+    if (props.applicationStages) {
+      this.applicationStages = props.applicationStages;
+    }
 
     this.buildResources();
   }
@@ -77,5 +89,22 @@ export class PipelineStack extends Stack {
         cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Saves the build output to the cloudAssembly Artifact
       }),
     });
+  }
+
+  public registerApplicationStage(stage: ApplicationStageConfig) {
+    this.applicationStages.push(stage);
+  }
+
+  public compilePipeline() {
+    if (this.applicationStages.length > 0) {
+      for (const stageConfig of this.applicationStages) {
+        const pipelineStage = this.pipeline.addApplicationStage(stageConfig.stage);
+        if (stageConfig.actions) {
+          for (const action of stageConfig.actions) {
+            pipelineStage.addActions(action);
+          }
+        }
+      }
+    }
   }
 }
