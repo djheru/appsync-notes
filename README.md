@@ -86,3 +86,43 @@ module.exports = {
 ```
 
 - Ensure that eslint has `prettierrc.js` as the prettier config file name
+
+## Set up CDK Stack
+
+### Implement CI/CD Pipeline
+
+#### Set up Github Token
+
+- Go to GitHub->Settings->Developer Settings->Personal access tokens
+- Generate new token, with name like "cdk-pipelines-demo"
+- Give `repo` and `admin:repo_hook` permissions
+
+```bash
+aws secretsmanager create-secret \
+  --name github-token \
+  --secret-string 'the token'
+```
+
+Example response
+
+```bash
+{
+    "ARN": "arn:aws:secretsmanager:us-east-1:205375198116:secret:github-token-h3nIdi",
+    "Name": "github-token",
+    "VersionId": "a2a94c65-53ee-4073-926c-0b78bc88dd7e"
+}
+```
+
+#### CDK Stack organization
+
+- CDK App instantiates the Pipeline stack
+- The Pipeline stack consists of CDKPipeline
+- The pipeline consists of stages
+- Stages consist of actions
+- 4 stages by default
+  - Source (e.g. github)
+  - Build (CDK synth/npm run build)
+  - Update Pipeline (Self mutate)
+  - Assets - (Publish artifacts)
+- The stage contains an instance of our application stack
+- Application stack contains our resources for our application (lambdas, apis, dbs, vpcs, etc)
