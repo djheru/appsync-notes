@@ -1,6 +1,7 @@
-import { Construct, Stack, StackProps } from '@aws-cdk/core';
+import { Construct, SecretValue, Stack, StackProps } from '@aws-cdk/core';
 import { Artifact } from '@aws-cdk/aws-codepipeline';
-import { CdkPipeline } from '@aws-cdk/pipelines';
+import { CdkPipeline, SimpleSynthAction } from '@aws-cdk/pipelines';
+import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
 
 export interface PipelineStackProps extends StackProps {
   // The branch we will be deploying from
@@ -20,6 +21,9 @@ export interface PipelineStackProps extends StackProps {
 }
 
 export class PipelineStack extends Stack {
+  // The name of the SSM secret containing the GitHub key
+  private static GITHUB_SECRET_ID = 'github-token';
+
   // Reference to the passed-in props
   private props: PipelineStackProps;
 
@@ -45,10 +49,33 @@ export class PipelineStack extends Stack {
 
   private buildResources() {
     this.buildArtifacts();
+    this.buildPipeline();
   }
 
   private buildArtifacts() {
     this.sourceArtifact = new Artifact(`${this.pipelineName}-sourceArtifact`);
     this.cloudAssemblyArtifact = new Artifact(`${this.pipelineName}-cloudAssemblyArtifact`);
+  }
+
+  private buildPipeline() {
+    const pipelineId = `${this.pipelineName}-pipeline`;
+    this.pipeline = new CdkPipeline(this, pipelineId, {
+      pipelineName: this.pipelineName,
+      cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Stores CDK build output
+      sourceAction: new GitHubSourceAction({
+        // Gets the source code from GitHub
+        actionName: `${this.pipelineName}-github-source`,
+        output: this.sourceArtifact, // Check out the repo files into the source Artifact
+        oauthToken: SecretValue.secretsManager(PipelineStack.GITHUB_SECRET_ID), // Token to get access to repo
+        owner: this.props.owner,
+        repo: this.props.repo,
+        branch: this.props.branch,
+      }),
+      synthAction: SimpleSynthAction.standardNpmSynth({
+        sourceArtifact: this.sourceArtifact, // Gets the source code from the source Artifact
+        buildCommand: 'npm run build', // Whatever build command your application code needs
+        cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Saves the build output to the cloudAssembly Artifact
+      }),
+    });
   }
 }
