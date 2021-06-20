@@ -97,6 +97,8 @@ module.exports = {
 - Generate new token, with name like "cdk-pipelines-demo"
 - Give `repo` and `admin:repo_hook` permissions
 
+#### Add Secret to AWS Secrets Manager
+
 ```bash
 aws secretsmanager create-secret \
   --name github-token \
