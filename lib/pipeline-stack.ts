@@ -1,4 +1,4 @@
-import { StackProps } from '@aws-cdk/core';
+import { Construct, Stack, StackProps } from '@aws-cdk/core';
 
 export interface PipelineStackProps extends StackProps {
   // The branch we will be deploying from
@@ -15,4 +15,13 @@ export interface PipelineStackProps extends StackProps {
   region: string;
   // An array of bash commands that can be executed to test the deployment
   testCommands?: string[];
+}
+
+export class PipelineStack extends Stack {
+  constructor(scope: Construct, id: string, props: PipelineStackProps) {
+    super(scope, id, props);
+    this.buildResources();
+  }
+
+  private buildResources() {}
 }
