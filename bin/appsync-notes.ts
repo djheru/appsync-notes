@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
-import { AppsyncNotesStack } from '../lib/appsync-notes-stack';
 import { PipelineStack } from '../lib/pipeline-stack';
 import { AppsyncNotesStage } from '../lib/appsync-notes-stage';
 
 const { CDK_DEFAULT_ACCOUNT: account, CDK_DEFAULT_REGION: region } = process.env;
 const env = { account, region };
-const branch = 'master';
+const branch = 'main';
 const repo = 'appsync-notes';
 const owner = 'djheru';
 const stageName = 'dev';
