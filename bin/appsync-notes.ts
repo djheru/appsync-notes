@@ -3,6 +3,7 @@ import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { AppsyncNotesStack } from '../lib/appsync-notes-stack';
 import { PipelineStack } from '../lib/pipeline-stack';
+import { AppsyncNotesStage } from '../lib/appsync-notes-stage';
 
 const { CDK_DEFAULT_ACCOUNT: account, CDK_DEFAULT_REGION: region } = process.env;
 const env = { account, region };
@@ -20,5 +21,10 @@ const pipelineStack = new PipelineStack(app, 'AppsyncNotesPipeline', {
   owner,
   stageName,
 });
+
+const applicationStage = new AppsyncNotesStage(app, 'AppsyncNotesStage', { env });
+
+pipelineStack.registerApplicationStage({ stage: applicationStage });
+pipelineStack.compilePipeline();
 
 app.synth();
