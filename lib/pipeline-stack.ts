@@ -101,6 +101,7 @@ export class PipelineStack extends Stack {
           }
         }
       }
+      this.applicationStages = [];
     }
   }
 }
