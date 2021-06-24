@@ -1,5 +1,5 @@
 import { CfnOutput, Construct, Stage, StageProps } from '@aws-cdk/core';
-import { AppsyncNotesStack } from './appsync-notes-stack';
+import { AppsyncNotesApiStack } from './appsync-notes-api-stack';
 
 export class AppsyncNotesStage extends Stage {
   public readonly urlOutput: CfnOutput;
@@ -7,6 +7,6 @@ export class AppsyncNotesStage extends Stage {
 
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
-    const application = new AppsyncNotesStack(this, 'AppsyncNotes');
+    const apiStack = new AppsyncNotesApiStack(this, 'AppsyncNotes');
   }
 }
