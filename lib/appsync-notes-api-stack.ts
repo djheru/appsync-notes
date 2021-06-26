@@ -52,12 +52,12 @@ export class AppsyncNotesApiStack extends Stack {
   }
 
   private buildCfnOutputs() {
-    const urlOutputId = `${this.id}-output-url`;
+    const urlOutputId = `${this.id}-output-url-output`;
     new CfnOutput(this, urlOutputId, {
       value: this.apiUrl,
     });
 
-    const apiKeyOutputId = `${this.id}-output-api-key`;
+    const apiKeyOutputId = `${this.id}-output-api-key-output`;
     new CfnOutput(this, apiKeyOutputId, {
       value: this.apiKey,
     });

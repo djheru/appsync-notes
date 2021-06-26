@@ -13,9 +13,9 @@ export interface AppsyncNotesLambdaStackProps extends StackProps {
 export class AppsyncNotesLambdaStack extends Stack {
   public id: string;
   public lambdaFunction: NodejsFunction;
-  private vpc;
-  private securityGroups;
-  private environmentVariables;
+  private vpc: Vpc;
+  private securityGroups: SecurityGroup[];
+  private environmentVariables: Record<string, string>;
 
   constructor(scope: Construct, id: string, props: AppsyncNotesLambdaStackProps) {
     super(scope, id);

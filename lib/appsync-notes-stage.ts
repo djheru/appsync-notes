@@ -2,7 +2,6 @@ import { CfnOutput, Construct, Stage, StageProps } from '@aws-cdk/core';
 import { AppsyncNotesApiStack } from './appsync-notes-api-stack';
 import { AppsyncNotesDbStack } from './appsync-notes-db-stack';
 import { AppsyncNotesLambdaStack } from './appsync-notes-lambda-stack';
-import { AppsyncNotesVpcStack } from './appsync-notes-vpc-stack';
 
 export class AppsyncNotesStage extends Stage {
   public readonly urlOutput: CfnOutput;
@@ -17,20 +16,15 @@ export class AppsyncNotesStage extends Stage {
       apiName,
     });
 
-    const vpcStackId = `${id}-vpc`;
-    const vpcStack = new AppsyncNotesVpcStack(this, vpcStackId, { maxAzs: 2 });
-
     const dbStackId = `${id}-db`;
     const dbStack = new AppsyncNotesDbStack(this, dbStackId, {
       databaseUsername: 'syscdk',
-      vpc: vpcStack.vpc,
-      securityGroup: vpcStack.connectionToRDSDBSG,
     });
 
     const lambdaStackId = `${id}-lambda-stack`;
     const lambdaStack = new AppsyncNotesLambdaStack(this, lambdaStackId, {
-      vpc: vpcStack.vpc,
-      securityGroups: [vpcStack.connectionToRDSProxySG],
+      vpc: dbStack.vpc,
+      securityGroups: [dbStack.connectionToRDSProxySG],
       environmentVariables: {
         DB_PROXY_ENDPOINT: dbStack.databaseProxy.endpoint,
         DB_CREDENTIALS_SECRET: dbStack.databaseCredentialsSecretId,

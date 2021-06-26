@@ -1,7 +1,10 @@
 import {
+  BastionHostLinux,
   InstanceClass,
   InstanceSize,
   InstanceType,
+  Peer,
+  Port,
   SecurityGroup,
   SubnetType,
   Vpc,
@@ -24,12 +27,15 @@ export interface AppsyncNotesDbStackProps extends StackProps {
   removalPolicy?: RemovalPolicy;
   defaultDatabaseName?: string;
   databaseUsername: string;
-  vpc: Vpc;
-  securityGroup: SecurityGroup;
+  maxAzs?: number;
 }
 export class AppsyncNotesDbStack extends Stack {
   public id: string;
   private props: AppsyncNotesDbStackProps;
+  public vpc: Vpc;
+  public connectionToRDSProxySG: SecurityGroup;
+  public connectionToRDSDBSG: SecurityGroup;
+  public bastionHost: BastionHostLinux;
   public databaseCredentialsSecretId: string;
   public databaseCredentialsSecret: Secret;
   public databaseCredentialsSecretArnParameter: StringParameter;
@@ -45,11 +51,56 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildResources() {
+    this.buildVpc();
+    this.buildSecurityGroups();
+    this.buildBastionHost();
     this.buildCredentialsSecret();
     this.buildCredentialsSecretArnParameter();
     this.buildDatabaseCluster();
     this.buildDatabaseProxy();
     this.buildCfnOutputs();
+  }
+
+  buildVpc() {
+    this.vpc = new Vpc(this, this.id, {
+      maxAzs: this.props.maxAzs || 2,
+    });
+  }
+
+  buildSecurityGroups() {
+    const connectionToRDSProxySGId = `${this.id}-rds-proxy-sg`;
+    this.connectionToRDSProxySG = new SecurityGroup(this, connectionToRDSProxySGId, {
+      vpc: this.vpc,
+    });
+
+    const connectionToRDSDBSGId = `${this.id}-rds-db-sg`;
+    this.connectionToRDSDBSG = new SecurityGroup(this, connectionToRDSDBSGId, {
+      vpc: this.vpc,
+    });
+
+    this.connectionToRDSDBSG.addIngressRule(
+      this.connectionToRDSDBSG,
+      Port.tcp(5432),
+      `Allow DB connection`
+    );
+    this.connectionToRDSDBSG.addIngressRule(
+      this.connectionToRDSProxySG,
+      Port.tcp(5432),
+      'Allow application connections'
+    );
+  }
+
+  buildBastionHost() {
+    const bastionHostId = `${this.id}-bastion-host`;
+    this.bastionHost = new BastionHostLinux(this, bastionHostId, {
+      vpc: this.vpc,
+      instanceName: bastionHostId,
+      subnetSelection: {
+        subnetType: SubnetType.PUBLIC,
+      },
+      securityGroup: this.connectionToRDSProxySG,
+    });
+    this.bastionHost.allowSshAccessFrom(Peer.anyIpv4());
   }
 
   buildCredentialsSecret() {
@@ -87,11 +138,11 @@ export class AppsyncNotesDbStack extends Stack {
       instanceProps: {
         instanceType:
           this.props.instanceType || InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MEDIUM),
-        vpc: this.props.vpc,
+        vpc: this.vpc,
         vpcSubnets: {
           subnetType: SubnetType.PRIVATE,
         },
-        securityGroups: [this.props.securityGroup],
+        securityGroups: [this.connectionToRDSDBSG],
       },
       deletionProtection: this.props.deletionProtection || false,
       removalPolicy: this.props.removalPolicy || RemovalPolicy.DESTROY,
@@ -104,8 +155,8 @@ export class AppsyncNotesDbStack extends Stack {
     this.databaseProxy = this.databaseCluster.addProxy(databaseProxyId, {
       secrets: [this.databaseCredentialsSecret],
       debugLogging: true,
-      vpc: this.props.vpc,
-      securityGroups: [this.props.securityGroup],
+      vpc: this.vpc,
+      securityGroups: [this.connectionToRDSDBSG],
     });
 
     const targetGroup = this.databaseProxy.node.children.find((child: any) => {
@@ -116,12 +167,12 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   private buildCfnOutputs() {
-    const proxyEndpointId = `${this.id}-proxy-endpoint`;
+    const proxyEndpointId = `${this.id}-proxy-endpoint-output`;
     new CfnOutput(this, proxyEndpointId, {
       value: this.databaseProxy.endpoint,
     });
 
-    const dbCredentialsSecretArnId = `${this.id}-credentials-secret-arn`;
+    const dbCredentialsSecretArnId = `${this.id}-credentials-secret-arn-output`;
     new CfnOutput(this, dbCredentialsSecretArnId, {
       value: this.databaseCredentialsSecret.secretArn,
     });
