@@ -68,6 +68,9 @@ export class PipelineStack extends Stack {
         branch: this.props.branch,
       }),
       synthAction: SimpleSynthAction.standardNpmSynth({
+        environment: {
+          privileged: true,
+        },
         sourceArtifact: this.sourceArtifact, // Gets the source code from the source Artifact
         buildCommand: 'npm run build', // Whatever build command your application code needs
         cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Saves the build output to the cloudAssembly Artifact
