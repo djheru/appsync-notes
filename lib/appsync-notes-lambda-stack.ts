@@ -3,6 +3,7 @@ import { Runtime } from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { Stack, StackProps } from '@aws-cdk/core';
 import { Construct } from 'constructs';
+import { ApiDatasourceConfig } from './appsync-notes-api-stack';
 
 export interface AppsyncNotesLambdaStackProps extends StackProps {
   vpc: Vpc;
@@ -42,5 +43,21 @@ export class AppsyncNotesLambdaStack extends Stack {
       securityGroups: this.securityGroups,
       environment: this.environmentVariables,
     });
+  }
+
+  public getDatasourceConfig(): ApiDatasourceConfig {
+    const datasourceConfigId = `${this.id}-datasource`;
+    const resolvers = [
+      { typeName: 'Query', fieldName: 'listNotes' },
+      { typeName: 'Query', fieldName: 'getNoteById' },
+      { typeName: 'Mutation', fieldName: 'createNote' },
+      { typeName: 'Mutation', fieldName: 'updateNote' },
+      { typeName: 'Mutation', fieldName: 'deleteNote' },
+    ];
+    return {
+      id: datasourceConfigId,
+      resolvers,
+      lambdaFunction: this.lambdaFunction,
+    };
   }
 }
