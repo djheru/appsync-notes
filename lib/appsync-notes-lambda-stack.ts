@@ -19,6 +19,7 @@ export class AppsyncNotesLambdaStack extends Stack {
 
   constructor(scope: Construct, id: string, props: AppsyncNotesLambdaStackProps) {
     super(scope, id);
+
     const { vpc, securityGroups, environmentVariables } = props;
 
     this.id = id;
