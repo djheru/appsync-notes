@@ -16,7 +16,7 @@ import {
 } from '@aws-cdk/aws-rds';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
 import { StringParameter } from '@aws-cdk/aws-ssm';
-import { Construct, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
+import { CfnOutput, Construct, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
 
 export interface AppsyncNotesDbStackProps extends StackProps {
   instanceType?: InstanceType;
@@ -49,6 +49,7 @@ export class AppsyncNotesDbStack extends Stack {
     this.buildCredentialsSecretArnParameter();
     this.buildDatabaseCluster();
     this.buildDatabaseProxy();
+    this.buildCfnOutputs();
   }
 
   buildCredentialsSecret() {
@@ -112,5 +113,17 @@ export class AppsyncNotesDbStack extends Stack {
     }) as CfnDBProxyTargetGroup;
 
     targetGroup.addPropertyOverride('TargetGroupName', 'default');
+  }
+
+  private buildCfnOutputs() {
+    const proxyEndpointId = `${this.id}-proxy-endpoint`;
+    new CfnOutput(this, proxyEndpointId, {
+      value: this.databaseProxy.endpoint,
+    });
+
+    const dbCredentialsSecretArnId = `${this.id}-credentials-secret-arn`;
+    new CfnOutput(this, dbCredentialsSecretArnId, {
+      value: this.databaseCredentialsSecret.secretArn,
+    });
   }
 }
