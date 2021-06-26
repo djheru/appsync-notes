@@ -10,10 +10,6 @@ export interface PipelineStackProps extends StackProps {
   repo: string;
   // The username of the repo owner
   owner: string;
-  // e.g. dev, test, prod, etc
-  stageName: string;
-  // Application stages to add to the pipeline
-  applicationStages?: ApplicationStageConfig[];
 }
 
 export interface ApplicationStageConfig {
@@ -40,17 +36,10 @@ export class PipelineStack extends Stack {
   // Pipeline name
   private pipelineName: string;
 
-  private applicationStages: ApplicationStageConfig[] = [];
-
   constructor(scope: Construct, id: string, props: PipelineStackProps) {
     super(scope, id, props);
     this.props = props;
-    this.pipelineName = `${props.repo}-${props.stageName}`;
-
-    // Application stages can be specified at instantiation or after, using registerApplicationStage
-    if (props.applicationStages) {
-      this.applicationStages = props.applicationStages;
-    }
+    this.pipelineName = `${id}`;
 
     this.buildResources();
   }
@@ -61,13 +50,12 @@ export class PipelineStack extends Stack {
   }
 
   private buildArtifacts() {
-    this.sourceArtifact = new Artifact(`${this.pipelineName}-sourceArtifact`);
-    this.cloudAssemblyArtifact = new Artifact(`${this.pipelineName}-cloudAssemblyArtifact`);
+    this.sourceArtifact = new Artifact(`${this.pipelineName}-source-artifact`);
+    this.cloudAssemblyArtifact = new Artifact(`${this.pipelineName}-cloudassembly-artifact`);
   }
 
   private buildPipeline() {
-    const pipelineId = `${this.pipelineName}-pipeline`;
-    this.pipeline = new CdkPipeline(this, pipelineId, {
+    this.pipeline = new CdkPipeline(this, this.pipelineName, {
       pipelineName: this.pipelineName,
       cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Stores CDK build output
       sourceAction: new GitHubSourceAction({
@@ -87,21 +75,12 @@ export class PipelineStack extends Stack {
     });
   }
 
-  public registerApplicationStage(stage: ApplicationStageConfig) {
-    this.applicationStages.push(stage);
-  }
-
-  public compilePipeline() {
-    if (this.applicationStages.length > 0) {
-      for (const stageConfig of this.applicationStages) {
-        const pipelineStage = this.pipeline.addApplicationStage(stageConfig.stage);
-        if (stageConfig.actions) {
-          for (const action of stageConfig.actions) {
-            pipelineStage.addActions(action);
-          }
-        }
+  public registerApplicationStage(stageConfig: ApplicationStageConfig) {
+    const pipelineStage = this.pipeline.addApplicationStage(stageConfig.stage);
+    if (stageConfig.actions) {
+      for (const action of stageConfig.actions) {
+        pipelineStage.addActions(action);
       }
-      this.applicationStages = [];
     }
   }
 }
