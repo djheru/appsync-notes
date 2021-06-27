@@ -69,7 +69,7 @@ export class PipelineStack extends Stack {
       }),
       synthAction: SimpleSynthAction.standardNpmSynth({
         environment: {
-          privileged: true,
+          privileged: true, // enables containerized builds
         },
         sourceArtifact: this.sourceArtifact, // Gets the source code from the source Artifact
         buildCommand: 'npm run build', // Whatever build command your application code needs
