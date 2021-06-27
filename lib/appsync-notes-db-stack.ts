@@ -20,6 +20,7 @@ import {
 import { Secret } from '@aws-cdk/aws-secretsmanager';
 import { StringParameter } from '@aws-cdk/aws-ssm';
 import { CfnOutput, Construct, RemovalPolicy, Stack, StackProps } from '@aws-cdk/core';
+import { pascalCase } from 'change-case';
 
 export interface AppsyncNotesDbStackProps extends StackProps {
   instanceType?: InstanceType;
@@ -68,12 +69,12 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildSecurityGroups() {
-    const connectionToRDSProxySGId = `${this.id}-rds-proxy-sg`;
+    const connectionToRDSProxySGId = pascalCase(`${this.id}-rds-proxy-sg`);
     this.connectionToRDSProxySG = new SecurityGroup(this, connectionToRDSProxySGId, {
       vpc: this.vpc,
     });
 
-    const connectionToRDSDBSGId = `${this.id}-rds-db-sg`;
+    const connectionToRDSDBSGId = pascalCase(`${this.id}-rds-db-sg`);
     this.connectionToRDSDBSG = new SecurityGroup(this, connectionToRDSDBSGId, {
       vpc: this.vpc,
     });
@@ -91,7 +92,7 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildBastionHost() {
-    const bastionHostId = `${this.id}-bastion-host`;
+    const bastionHostId = pascalCase(`${this.id}-bastion-host`);
     this.bastionHost = new BastionHostLinux(this, bastionHostId, {
       vpc: this.vpc,
       instanceName: bastionHostId,
@@ -104,7 +105,7 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildCredentialsSecret() {
-    this.databaseCredentialsSecretId = `${this.id}-credentials-secret`;
+    this.databaseCredentialsSecretId = pascalCase(`${this.id}-credentials-secret`);
     this.databaseCredentialsSecret = new Secret(this, this.databaseCredentialsSecretId, {
       secretName: this.databaseCredentialsSecretId,
       generateSecretString: {
@@ -117,7 +118,7 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildCredentialsSecretArnParameter() {
-    const databaseCredentialsSecretArnParameterId = `${this.id}-credentials-secret-arn`;
+    const databaseCredentialsSecretArnParameterId = pascalCase(`${this.id}-credentials-secret-arn`);
     this.databaseCredentialsSecretArnParameter = new StringParameter(
       this,
       databaseCredentialsSecretArnParameterId,
@@ -129,7 +130,7 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildDatabaseCluster() {
-    const databaseClusterId = `${this.id}-cluster`;
+    const databaseClusterId = pascalCase(`${this.id}-cluster`);
     this.databaseCluster = new DatabaseCluster(this, databaseClusterId, {
       engine: DatabaseClusterEngine.auroraPostgres({
         version: AuroraPostgresEngineVersion.VER_10_14,
@@ -151,7 +152,7 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   buildDatabaseProxy() {
-    const databaseProxyId = `${this.id}-proxy`;
+    const databaseProxyId = pascalCase(`${this.id}-proxy`);
     this.databaseProxy = this.databaseCluster.addProxy(databaseProxyId, {
       secrets: [this.databaseCredentialsSecret],
       debugLogging: true,
@@ -167,12 +168,12 @@ export class AppsyncNotesDbStack extends Stack {
   }
 
   private buildCfnOutputs() {
-    const proxyEndpointId = `${this.id}-proxy-endpoint-output`;
+    const proxyEndpointId = pascalCase(`${this.id}-proxy-endpoint-output`);
     new CfnOutput(this, proxyEndpointId, {
       value: this.databaseProxy.endpoint,
     });
 
-    const dbCredentialsSecretArnId = `${this.id}-credentials-secret-arn-output`;
+    const dbCredentialsSecretArnId = pascalCase(`${this.id}-credentials-secret-arn-output`);
     new CfnOutput(this, dbCredentialsSecretArnId, {
       value: this.databaseCredentialsSecret.secretArn,
     });

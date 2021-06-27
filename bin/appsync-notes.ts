@@ -3,6 +3,7 @@ import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { PipelineStack } from '../lib/pipeline-stack';
 import { AppsyncNotesStage } from '../lib/appsync-notes-stage';
+import { pascalCase } from 'change-case';
 
 const {
   CDK_DEFAULT_ACCOUNT: account,
@@ -17,9 +18,9 @@ const env = { account, region };
 
 const app = new cdk.App();
 
-const baseId = `${repo}-${stage}`;
+const baseId = pascalCase(`${repo}-${stage}`);
 
-const pipelineStackId = `${baseId}-pipeline`;
+const pipelineStackId = pascalCase(`${baseId}-pipeline`);
 const pipelineStack = new PipelineStack(app, pipelineStackId, {
   env,
   branch,

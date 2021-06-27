@@ -1,6 +1,7 @@
 import { AuthorizationType, BaseResolverProps, GraphqlApi, Schema } from '@aws-cdk/aws-appsync';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { CfnOutput, Construct, Duration, Expiration, Stack, StackProps } from '@aws-cdk/core';
+import { pascalCase } from 'change-case';
 
 export interface ApiDatasourceConfig {
   id: string;
@@ -34,7 +35,7 @@ export class AppsyncNotesApiStack extends Stack {
   }
 
   private buildApi() {
-    const apiId = `${this.id}-graphql-api`;
+    const apiId = pascalCase(`${this.id}-graphql-api`);
     this.api = new GraphqlApi(this, apiId, {
       name: this.apiName,
       schema: Schema.fromAsset('graphql/schema.graphql'),
@@ -52,12 +53,12 @@ export class AppsyncNotesApiStack extends Stack {
   }
 
   private buildCfnOutputs() {
-    const urlOutputId = `${this.id}-output-url-output`;
+    const urlOutputId = pascalCase(`${this.id}-output-url-output`);
     new CfnOutput(this, urlOutputId, {
       value: this.apiUrl,
     });
 
-    const apiKeyOutputId = `${this.id}-output-api-key-output`;
+    const apiKeyOutputId = pascalCase(`${this.id}-output-api-key-output`);
     new CfnOutput(this, apiKeyOutputId, {
       value: this.apiKey,
     });

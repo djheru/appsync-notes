@@ -2,6 +2,7 @@ import { Construct, SecretValue, Stack, StackProps, Stage } from '@aws-cdk/core'
 import { Action, Artifact } from '@aws-cdk/aws-codepipeline';
 import { CdkPipeline, SimpleSynthAction } from '@aws-cdk/pipelines';
 import { GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions';
+import { pascalCase } from 'change-case';
 
 export interface PipelineStackProps extends StackProps {
   // The branch we will be deploying from
@@ -50,8 +51,11 @@ export class PipelineStack extends Stack {
   }
 
   private buildArtifacts() {
-    this.sourceArtifact = new Artifact(`${this.pipelineName}-source-artifact`);
-    this.cloudAssemblyArtifact = new Artifact(`${this.pipelineName}-cloudassembly-artifact`);
+    const sourceArtifcactId = pascalCase(`${this.pipelineName}-source-artifact`);
+    this.sourceArtifact = new Artifact(sourceArtifcactId);
+
+    const cloudAssemblyArtifactId = pascalCase(`${this.pipelineName}-cloudassembly-artifact`);
+    this.cloudAssemblyArtifact = new Artifact(cloudAssemblyArtifactId);
   }
 
   private buildPipeline() {
@@ -60,7 +64,7 @@ export class PipelineStack extends Stack {
       cloudAssemblyArtifact: this.cloudAssemblyArtifact, // Stores CDK build output
       sourceAction: new GitHubSourceAction({
         // Gets the source code from GitHub
-        actionName: `${this.pipelineName}-github-source`,
+        actionName: pascalCase(`${this.pipelineName}-github-source`),
         output: this.sourceArtifact, // Check out the repo files into the source Artifact
         oauthToken: SecretValue.secretsManager(PipelineStack.GITHUB_SECRET_ID), // Token to get access to repo
         owner: this.props.owner,

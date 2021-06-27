@@ -2,6 +2,7 @@ import { SecurityGroup, Vpc } from '@aws-cdk/aws-ec2';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { Stack, StackProps } from '@aws-cdk/core';
+import { pascalCase } from 'change-case';
 import { Construct } from 'constructs';
 import { ApiDatasourceConfig } from './appsync-notes-api-stack';
 
@@ -35,7 +36,7 @@ export class AppsyncNotesLambdaStack extends Stack {
   }
 
   private buildLambdaFunction() {
-    const lambdaFunctionId = `${this.id}-lambda-function`;
+    const lambdaFunctionId = pascalCase(`${this.id}-lambda-function`);
     this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
       runtime: Runtime.NODEJS_12_X,
       entry: 'src/handler.ts',
@@ -47,7 +48,7 @@ export class AppsyncNotesLambdaStack extends Stack {
   }
 
   public getDatasourceConfig(): ApiDatasourceConfig {
-    const datasourceConfigId = `${this.id}-datasource`;
+    const datasourceConfigId = pascalCase(`${this.id}-datasource`);
     const resolvers = [
       { typeName: 'Query', fieldName: 'listNotes' },
       { typeName: 'Query', fieldName: 'getNoteById' },
