@@ -27,7 +27,6 @@ export class AppsyncNotesLambdaStack extends Stack {
     this.vpc = vpc;
     this.securityGroups = securityGroups;
     this.environmentVariables = environmentVariables;
-
     this.buildResources();
   }
 
