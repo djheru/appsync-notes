@@ -56,6 +56,7 @@ export class AppsyncNotesStack extends Stack {
   public databaseCredentialsSecretId: string;
   public databaseCluster: DatabaseCluster;
   public databaseProxy: DatabaseProxy;
+  public databaseProxyEndpoint: string;
 
   // AppSync API Resources
   public api: GraphqlApi;
@@ -70,7 +71,6 @@ export class AppsyncNotesStack extends Stack {
 
     this.id = id;
     this.props = props;
-
     this.buildResources();
   }
 
@@ -81,14 +81,14 @@ export class AppsyncNotesStack extends Stack {
     this.buildDatabaseCredentialsSecret();
     this.buildDatabaseCluster();
     this.buildLambdaFunction();
-    this.buildApiGateway();
-    this.buildCfnOutputs();
+    this.buildGraphqlApi();
   }
 
   buildVpc() {
     const vpcId = pascalCase(`${this.id}-vpc`);
     this.vpc = new Vpc(this, vpcId, {
       enableDnsHostnames: true,
+      enableDnsSupport: true,
       maxAzs: this.props.maxAzs || 2,
     });
   }
@@ -125,6 +125,11 @@ export class AppsyncNotesStack extends Stack {
         subnetType: SubnetType.PUBLIC,
       },
       securityGroup: this.connectToRdsProxySg,
+    });
+
+    const bastionHostOutputId = pascalCase(`${this.id}-output-bastion-hostname`);
+    new CfnOutput(this, bastionHostOutputId, {
+      value: this.bastionHost.instancePublicDnsName,
     });
   }
 
@@ -177,55 +182,7 @@ export class AppsyncNotesStack extends Stack {
     }) as CfnDBProxyTargetGroup;
 
     targetGroup.addPropertyOverride('TargetGroupName', 'default');
-  }
-
-  buildLambdaFunction() {
-    const lambdaFunctionId = pascalCase(`${this.id}-function`);
-    this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
-      runtime: Runtime.NODEJS_12_X,
-      entry: 'src/handler.ts',
-      handler: 'handler',
-      vpc: this.vpc,
-      securityGroups: [this.connectToRdsProxySg],
-      environment: {
-        PROXY_ENDPOINT: this.databaseProxy.endpoint,
-        RDS_SECRET_NAME: this.databaseCredentialsSecretId,
-      },
-    });
-    this.databaseCredentialsSecret.grantRead(this.lambdaFunction);
-  }
-
-  buildApiGateway() {
-    const apiId = pascalCase(`${this.id}-graphql-api`);
-    this.api = new GraphqlApi(this, apiId, {
-      name: this.props.apiName,
-      schema: Schema.fromAsset('graphql/schema.graphql'),
-      authorizationConfig: {
-        defaultAuthorization: {
-          authorizationType: AuthorizationType.API_KEY,
-          apiKeyConfig: {
-            expires: Expiration.after(Duration.days(365)),
-          },
-        },
-      },
-    });
-  }
-
-  buildCfnOutputs() {
-    const urlOutputId = pascalCase(`${this.id}-output-url`);
-    new CfnOutput(this, urlOutputId, {
-      value: this.apiUrl,
-    });
-
-    const apiKeyOutputId = pascalCase(`${this.id}-output-api-key`);
-    new CfnOutput(this, apiKeyOutputId, {
-      value: this.apiKey,
-    });
-
-    const bastionHostOutputId = pascalCase(`${this.id}-output-bastion-hostname`);
-    new CfnOutput(this, bastionHostOutputId, {
-      value: this.bastionHost.instancePublicDnsName,
-    });
+    this.databaseProxyEndpoint = this.databaseProxy.endpoint;
 
     const rdsProxyOutputId = pascalCase(`${this.id}-output-rds-proxy-endpoint`);
     new CfnOutput(this, rdsProxyOutputId, {
@@ -240,6 +197,65 @@ export class AppsyncNotesStack extends Stack {
     const rdsReadOutputId = pascalCase(`${this.id}-output-rds-read-endpoint`);
     new CfnOutput(this, rdsReadOutputId, {
       value: this.databaseCluster.clusterReadEndpoint.hostname,
+    });
+  }
+
+  buildLambdaFunction() {
+    const lambdaFunctionId = pascalCase(`${this.id}-function`);
+    this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
+      runtime: Runtime.NODEJS_12_X,
+      entry: 'src/handler.ts',
+      handler: 'handler',
+      vpc: this.vpc,
+      securityGroups: [this.connectToRdsProxySg],
+      environment: {
+        PROXY_ENDPOINT: this.databaseProxyEndpoint,
+        RDS_SECRET_NAME: this.databaseCredentialsSecretId,
+      },
+    });
+    this.databaseCredentialsSecret.grantRead(this.lambdaFunction);
+  }
+
+  private buildGraphqlApi() {
+    const apiId = pascalCase(`${this.id}-graphql-api`);
+    this.api = new GraphqlApi(this, apiId, {
+      name: this.props.apiName,
+      schema: Schema.fromAsset('graphql/schema.graphql'),
+      authorizationConfig: {
+        defaultAuthorization: {
+          authorizationType: AuthorizationType.API_KEY,
+          apiKeyConfig: {
+            expires: Expiration.after(Duration.days(365)),
+          },
+        },
+      },
+    });
+    this.apiUrl = this.api.graphqlUrl;
+    this.apiKey = this.api.apiKey || '';
+
+    const apiDatasourceId = pascalCase(`${this.id}-graphql-datasource`);
+    const datasource = this.api.addLambdaDataSource(apiDatasourceId, this.lambdaFunction);
+
+    const resolvers = [
+      { typeName: 'Query', fieldName: 'listNotes' },
+      { typeName: 'Query', fieldName: 'getNoteById' },
+      { typeName: 'Mutation', fieldName: 'createNote' },
+      { typeName: 'Mutation', fieldName: 'updateNote' },
+      { typeName: 'Mutation', fieldName: 'deleteNote' },
+    ];
+
+    resolvers.forEach((resolver) => {
+      datasource.createResolver(resolver);
+    });
+
+    const urlOutputId = pascalCase(`${this.id}-output-url`);
+    new CfnOutput(this, urlOutputId, {
+      value: this.apiUrl,
+    });
+
+    const apiKeyOutputId = pascalCase(`${this.id}-output-api-key`);
+    new CfnOutput(this, apiKeyOutputId, {
+      value: this.apiKey,
     });
   }
 }
