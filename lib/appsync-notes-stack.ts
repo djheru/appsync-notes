@@ -21,15 +21,15 @@ import {
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import {
-  AuroraPostgresEngineVersion,
   CfnDBProxyTargetGroup,
   Credentials,
-  DatabaseCluster,
-  DatabaseClusterEngine,
+  DatabaseInstance,
+  DatabaseInstanceEngine,
   DatabaseProxy,
+  PostgresEngineVersion,
 } from '@aws-cdk/aws-rds';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
-import { pascalCase } from 'change-case';
+import { paramCase, pascalCase } from 'change-case';
 
 export interface AppsyncNotesStackProps extends StackProps {
   databaseUsername: string;
@@ -51,10 +51,10 @@ export class AppsyncNotesStack extends Stack {
   public connectToRdsDbSg: SecurityGroup;
   public bastionHost: BastionHostLinux;
 
-  // DB Cluster Resources
+  // DB Instance Resources
   public databaseCredentialsSecret: Secret;
   public databaseCredentialsSecretName: string;
-  public databaseCluster: DatabaseCluster;
+  public databaseInstance: DatabaseInstance;
   public databaseProxy: DatabaseProxy;
   public databaseProxyEndpoint: string;
 
@@ -79,7 +79,7 @@ export class AppsyncNotesStack extends Stack {
     this.buildSecurityGroups();
     this.buildBastionHost();
     this.buildDatabaseCredentialsSecret();
-    this.buildDatabaseCluster();
+    this.buildDatabaseInstance();
     this.buildLambdaFunction();
     this.buildGraphqlApi();
   }
@@ -147,31 +147,29 @@ export class AppsyncNotesStack extends Stack {
     });
   }
 
-  buildDatabaseCluster() {
-    const databaseClusterId = pascalCase(`db-cluster`);
-    this.databaseCluster = new DatabaseCluster(this, databaseClusterId, {
-      engine: DatabaseClusterEngine.auroraPostgres({
-        version: AuroraPostgresEngineVersion.VER_10_14,
-      }),
-      credentials: Credentials.fromSecret(this.databaseCredentialsSecret),
-      instanceProps: {
-        instanceType:
-          this.props.instanceType || InstanceType.of(InstanceClass.BURSTABLE3, InstanceSize.MEDIUM),
-        vpc: this.vpc,
-        vpcSubnets: {
-          subnetType: SubnetType.PRIVATE,
-        },
-        securityGroups: [this.connectToRdsDbSg],
-      },
+  buildDatabaseInstance() {
+    const databaseInstanceId = pascalCase(`db-instance`);
+    this.databaseInstance = new DatabaseInstance(this, databaseInstanceId, {
       deletionProtection: this.props.deletionProtection || false,
       removalPolicy: this.props.removalPolicy || RemovalPolicy.DESTROY,
-      defaultDatabaseName: this.props.defaultDatabaseName || 'notes',
+      databaseName: this.props.defaultDatabaseName || 'notes',
+      engine: DatabaseInstanceEngine.postgres({
+        version: PostgresEngineVersion.VER_12_6,
+      }),
+      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
+      instanceIdentifier: paramCase(`${this.props.apiName}-db`),
+      credentials: Credentials.fromSecret(this.databaseCredentialsSecret),
+      vpc: this.vpc,
+      vpcSubnets: {
+        subnetType: SubnetType.PRIVATE,
+      },
+      securityGroups: [this.connectToRdsDbSg],
     });
   }
 
   buildDatabaseProxy() {
     const databaseProxyId = pascalCase(`db-proxy`);
-    this.databaseProxy = this.databaseCluster.addProxy(databaseProxyId, {
+    this.databaseProxy = this.databaseInstance.addProxy(databaseProxyId, {
       secrets: [this.databaseCredentialsSecret],
       debugLogging: true,
       vpc: this.vpc,
@@ -190,21 +188,17 @@ export class AppsyncNotesStack extends Stack {
       value: this.databaseProxy.endpoint,
     });
 
-    const rdsWriteOutputId = pascalCase(`${this.id}-output-rds-write-endpoint`);
-    new CfnOutput(this, rdsWriteOutputId, {
-      value: this.databaseCluster.clusterEndpoint.hostname,
-    });
-
-    const rdsReadOutputId = pascalCase(`${this.id}-output-rds-read-endpoint`);
-    new CfnOutput(this, rdsReadOutputId, {
-      value: this.databaseCluster.clusterReadEndpoint.hostname,
+    const rdsDbOutputId = pascalCase(`${this.id}-output-rds-db-endpoint`);
+    new CfnOutput(this, rdsDbOutputId, {
+      value: this.databaseInstance.instanceEndpoint.hostname,
     });
   }
 
   buildLambdaFunction() {
-    const lambdaFunctionId = pascalCase(`lambda-function`);
+    const lambdaFunctionId = pascalCase(`datasource`);
+    const lambdaFunctionName = pascalCase(`${this.props.apiName}-${lambdaFunctionId}`);
     this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
-      functionName: pascalCase(`${this.id}-${lambdaFunctionId}`),
+      functionName: lambdaFunctionName,
       runtime: Runtime.NODEJS_12_X,
       entry: 'src/handler.ts',
       handler: 'handler',
