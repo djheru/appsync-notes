@@ -53,7 +53,7 @@ export class AppsyncNotesStack extends Stack {
 
   // DB Cluster Resources
   public databaseCredentialsSecret: Secret;
-  public databaseCredentialsSecretId: string;
+  public databaseCredentialsSecretName: string;
   public databaseCluster: DatabaseCluster;
   public databaseProxy: DatabaseProxy;
   public databaseProxyEndpoint: string;
@@ -85,7 +85,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildVpc() {
-    const vpcId = pascalCase(`${this.id}-vpc`);
+    const vpcId = 'Vpc';
     this.vpc = new Vpc(this, vpcId, {
       enableDnsHostnames: true,
       enableDnsSupport: true,
@@ -94,12 +94,12 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildSecurityGroups() {
-    const connectToRdsProxySgId = pascalCase(`${this.id}-rds-proxy-sg`);
+    const connectToRdsProxySgId = pascalCase(`rds-proxy-sg`);
     this.connectToRdsProxySg = new SecurityGroup(this, connectToRdsProxySgId, {
       vpc: this.vpc,
     });
 
-    const connectToRdsDbSgId = pascalCase(`${this.id}-rds-db-sg`);
+    const connectToRdsDbSgId = pascalCase(`rds-db-sg`);
     this.connectToRdsDbSg = new SecurityGroup(this, connectToRdsDbSgId, {
       vpc: this.vpc,
     });
@@ -117,7 +117,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildBastionHost() {
-    const bastionHostId = pascalCase(`${this.id}-bastion-host`);
+    const bastionHostId = pascalCase(`bastion-host`);
     this.bastionHost = new BastionHostLinux(this, bastionHostId, {
       vpc: this.vpc,
       instanceName: bastionHostId,
@@ -127,16 +127,17 @@ export class AppsyncNotesStack extends Stack {
       securityGroup: this.connectToRdsProxySg,
     });
 
-    const bastionHostOutputId = pascalCase(`${this.id}-output-bastion-hostname`);
+    const bastionHostOutputId = pascalCase(`output-bastion-hostname`);
     new CfnOutput(this, bastionHostOutputId, {
       value: this.bastionHost.instancePublicDnsName,
     });
   }
 
   buildDatabaseCredentialsSecret() {
-    this.databaseCredentialsSecretId = pascalCase(`${this.id}-db-secret`);
-    this.databaseCredentialsSecret = new Secret(this, this.databaseCredentialsSecretId, {
-      secretName: this.databaseCredentialsSecretId,
+    const databaseCredentialsSecretId = pascalCase('db-secret');
+    this.databaseCredentialsSecretName = pascalCase(`${this.id}-${databaseCredentialsSecretId}`);
+    this.databaseCredentialsSecret = new Secret(this, databaseCredentialsSecretId, {
+      secretName: this.databaseCredentialsSecretName,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: this.props.databaseUsername }),
         excludePunctuation: true,
@@ -147,7 +148,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseCluster() {
-    const databaseClusterId = pascalCase(`${this.id}-cluster`);
+    const databaseClusterId = pascalCase(`db-cluster`);
     this.databaseCluster = new DatabaseCluster(this, databaseClusterId, {
       engine: DatabaseClusterEngine.auroraPostgres({
         version: AuroraPostgresEngineVersion.VER_10_14,
@@ -169,7 +170,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseProxy() {
-    const databaseProxyId = pascalCase(`${this.id}-proxy`);
+    const databaseProxyId = pascalCase(`db-proxy`);
     this.databaseProxy = this.databaseCluster.addProxy(databaseProxyId, {
       secrets: [this.databaseCredentialsSecret],
       debugLogging: true,
@@ -201,8 +202,9 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildLambdaFunction() {
-    const lambdaFunctionId = pascalCase(`${this.id}-function`);
+    const lambdaFunctionId = pascalCase(`lambda-function`);
     this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
+      functionName: pascalCase(`${this.id}-${lambdaFunctionId}`),
       runtime: Runtime.NODEJS_12_X,
       entry: 'src/handler.ts',
       handler: 'handler',
@@ -210,14 +212,14 @@ export class AppsyncNotesStack extends Stack {
       securityGroups: [this.connectToRdsProxySg],
       environment: {
         PROXY_ENDPOINT: this.databaseProxyEndpoint,
-        RDS_SECRET_NAME: this.databaseCredentialsSecretId,
+        RDS_SECRET_NAME: this.databaseCredentialsSecretName,
       },
     });
     this.databaseCredentialsSecret.grantRead(this.lambdaFunction);
   }
 
   private buildGraphqlApi() {
-    const apiId = pascalCase(`${this.id}-graphql-api`);
+    const apiId = pascalCase(`graphql-api`);
     this.api = new GraphqlApi(this, apiId, {
       name: this.props.apiName,
       schema: Schema.fromAsset('graphql/schema.graphql'),
@@ -230,10 +232,12 @@ export class AppsyncNotesStack extends Stack {
         },
       },
     });
+
+    //
     this.apiUrl = this.api.graphqlUrl;
     this.apiKey = this.api.apiKey || '';
 
-    const apiDatasourceId = pascalCase(`${this.id}-graphql-datasource`);
+    const apiDatasourceId = pascalCase(`graphql-datasource`);
     const datasource = this.api.addLambdaDataSource(apiDatasourceId, this.lambdaFunction);
 
     const resolvers = [
@@ -248,13 +252,17 @@ export class AppsyncNotesStack extends Stack {
       datasource.createResolver(resolver);
     });
 
-    const urlOutputId = pascalCase(`${this.id}-output-url`);
+    const urlOutputId = pascalCase(`output-url`);
+    const urlExportId = pascalCase(`${this.id}-${urlOutputId}`);
     new CfnOutput(this, urlOutputId, {
+      exportName: urlExportId,
       value: this.apiUrl,
     });
 
-    const apiKeyOutputId = pascalCase(`${this.id}-output-api-key`);
+    const apiKeyOutputId = pascalCase(`output-api-key`);
+    const apiKeyExportId = pascalCase(`${this.id}-${apiKeyOutputId}`);
     new CfnOutput(this, apiKeyOutputId, {
+      exportName: apiKeyExportId,
       value: this.apiKey,
     });
   }

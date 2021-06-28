@@ -89,15 +89,13 @@ module.exports = {
 
 ## Set up CDK Stack
 
-### Implement CI/CD Pipeline
-
-#### Set up Github Token
+### Set up Github Token
 
 - Go to GitHub->Settings->Developer Settings->Personal access tokens
 - Generate new token, with name like "cdk-pipelines-demo"
 - Give `repo` and `admin:repo_hook` permissions
 
-#### Add Secret to AWS Secrets Manager
+### Add Secret to AWS Secrets Manager
 
 ```bash
 aws secretsmanager create-secret \
@@ -115,16 +113,18 @@ Example response
 }
 ```
 
-#### CDK Stack organization
+### CDK Stack organization
 
 - CDK App instantiates the Pipeline stack
 - The Pipeline stack consists of CDKPipeline
 - The pipeline consists of stages
-- Stages consist of actions
+- Stages con actions
 - 4 stages by default
   - Source (e.g. github)
   - Build (CDK synth/npm run build)
   - Update Pipeline (Self mutate)
   - Assets - (Publish artifacts)
-- The stage contains an instance of our application stack
+- The stage contains an instance of our application stack (appsync-notes-stack)
 - Application stack contains our resources for our application (lambdas, apis, dbs, vpcs, etc)
+
+## Connect to DB via Bastion Host
