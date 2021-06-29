@@ -13,7 +13,7 @@ fi
 # Set vars
 stack="$1"
 ssh_key="$2"
-endpoint_query=$(echo "DBClusterEndpoints[?contains(Endpoint, \`$stack\`)].{E:Endpoint}[0].E")
+endpoint_query=$(echo "DBInstances[?contains(Endpoint.Address, \`$stack\`)].{E:Endpoint}[0].E.Address")
 
 if [[ ! -f "$ssh_key" ]] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} SSH Key not found. Usage: yarn db-tunnel stack-name ./path/to/private/key\n\n"
@@ -26,9 +26,9 @@ if [[ ! -f "$ssh_key.pub" ]] ; then
 fi
 
 echo "${GREEN_ON}√${COLOR_OFF} Retrieving RDS DB Endpoint"
-export RDS_ENDPOINT=$(aws rds describe-db-cluster-endpoints \
+export RDS_ENDPOINT=$(aws rds describe-db-instances \
   --query "$(echo $endpoint_query)" | tr -d '"')
-if [ -z "$RDS_ENDPOINT" ] ; then
+if [ $RDS_ENDPOINT == "null" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the RDS Endpoint"
   exit 1
 fi

@@ -29,7 +29,7 @@ import {
   PostgresEngineVersion,
 } from '@aws-cdk/aws-rds';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
-import { paramCase, pascalCase } from 'change-case';
+import { pascalCase } from 'change-case';
 
 export interface AppsyncNotesStackProps extends StackProps {
   databaseUsername: string;
@@ -157,7 +157,7 @@ export class AppsyncNotesStack extends Stack {
         version: PostgresEngineVersion.VER_12_6,
       }),
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      instanceIdentifier: paramCase(`${this.props.apiName}-db`),
+      instanceIdentifier: pascalCase(`${this.props.apiName}-db`),
       credentials: Credentials.fromSecret(this.databaseCredentialsSecret),
       vpc: this.vpc,
       vpcSubnets: {
