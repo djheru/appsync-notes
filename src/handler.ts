@@ -1,3 +1,11 @@
+export const resolvers = [
+  { typeName: 'Query', fieldName: 'listNotes' },
+  { typeName: 'Query', fieldName: 'getNoteById' },
+  { typeName: 'Mutation', fieldName: 'createNote' },
+  { typeName: 'Mutation', fieldName: 'updateNote' },
+  { typeName: 'Mutation', fieldName: 'deleteNote' },
+];
+
 export type AppSyncEvent = {
   info: {
     fieldName: string;

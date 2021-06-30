@@ -26,14 +26,20 @@ if [[ ! -f "$ssh_key.pub" ]] ; then
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving RDS DB Endpoint"
-export RDS_ENDPOINT=$(aws rds describe-db-instances \
-  --db-instance-identifier $db_identifier \
-  --query "DBInstances[0].Endpoint.Address" | tr -d '"')
-if [ $RDS_ENDPOINT == "null" ] ; then
-  echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the RDS Endpoint"
+echo "${GREEN_ON}√${COLOR_OFF} Retrieving RDS DB Secret"
+export RDS_CREDENTIALS=$(aws secretsmanager get-secret-value \
+  --secret-id "$stack"DbSecret \
+  --query 'SecretString')
+if [ -z "$RDS_CREDENTIALS" ] ; then
+  echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the DB connection details"
   exit 1
 fi
+user=$(node -p "JSON.parse($RDS_CREDENTIALS).username")
+pass=$(node -p "JSON.parse($RDS_CREDENTIALS).password")
+host=$(node -p "JSON.parse($RDS_CREDENTIALS).host")
+port=$(node -p "JSON.parse($RDS_CREDENTIALS).port")
+dbname=$(node -p "JSON.parse($RDS_CREDENTIALS).dbname")
+
 
 echo "${GREEN_ON}√${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
 export BASTION_IP_ADDRESS=$(aws ec2 describe-instances \
@@ -78,11 +84,20 @@ aws ec2-instance-connect send-ssh-public-key \
   --instance-os-user ec2-user \
   --ssh-public-key file://$ssh_key.pub
 
-echo -e "\n\n${GREEN_ON}√ Opening SSH Tunnel!${COLOR_OFF}"
-echo "You may now connect to the remote database using SSH tunneling"
-echo "RDS Endpoint: ${GREEN_ON}$RDS_ENDPOINT${COLOR_OFF}"
-echo "RDS Credentials: From Secrets Manager"
+
+echo -e "\n"
+echo "${GREEN_ON}You may now connect to the remote database using SSH tunneling${COLOR_OFF}"
+echo -e "\n"
+echo "RDS Credentials: "
+echo "HOST: ${GREEN_ON}$host${COLOR_OFF}"
+echo "USERNAME: ${GREEN_ON}$user${COLOR_OFF}"
+echo "PASSWORD: ${GREEN_ON}$pass${COLOR_OFF}"
+echo "PORT: ${GREEN_ON}$port${COLOR_OFF}"
+echo "DB NAME: ${GREEN_ON}$dbname${COLOR_OFF}"
+echo -e "\n"
 echo "SSH Tunneling Host: ${GREEN_ON}$BASTION_IP_ADDRESS${COLOR_OFF}"
 echo "SSH Tunneling Username: ${GREEN_ON}ec2-user${COLOR_OFF}"
 echo "SSH Tunneling key: ${GREEN_ON}$ssh_key${COLOR_OFF}"
+echo -e "\n"
 echo "You must connect within 60 seconds"
+echo "Don't worry if you're too slow, just run this script again ;-)"
