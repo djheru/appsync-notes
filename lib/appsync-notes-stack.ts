@@ -81,6 +81,7 @@ export class AppsyncNotesStack extends Stack {
     this.buildBastionHost();
     this.buildDatabaseCredentialsSecret();
     this.buildDatabaseInstance();
+    this.buildDatabaseProxy();
     this.buildLambdaFunction();
     this.buildGraphqlApi();
   }
@@ -186,13 +187,15 @@ export class AppsyncNotesStack extends Stack {
     targetGroup.addPropertyOverride('TargetGroupName', 'default');
     this.databaseProxyEndpoint = this.databaseProxy.endpoint;
 
-    const rdsProxyOutputId = pascalCase(`${this.id}-output-rds-proxy-endpoint`);
+    const rdsProxyOutputId = pascalCase(`${this.props.apiName}-output-rds-proxy-endpoint`);
     new CfnOutput(this, rdsProxyOutputId, {
+      exportName: rdsProxyOutputId,
       value: this.databaseProxy.endpoint,
     });
 
-    const rdsDbOutputId = pascalCase(`${this.id}-output-rds-db-endpoint`);
+    const rdsDbOutputId = pascalCase(`${this.props.apiName}-output-rds-db-endpoint`);
     new CfnOutput(this, rdsDbOutputId, {
+      exportName: rdsDbOutputId,
       value: this.databaseInstance.instanceEndpoint.hostname,
     });
   }
@@ -250,16 +253,14 @@ export class AppsyncNotesStack extends Stack {
     });
 
     const urlOutputId = pascalCase(`${this.props.apiName}-output-url`);
-    const urlExportId = pascalCase(`${this.props.apiName}-${urlOutputId}`);
     new CfnOutput(this, urlOutputId, {
-      exportName: urlExportId,
+      exportName: urlOutputId,
       value: this.apiUrl,
     });
 
-    const apiKeyOutputId = pascalCase(`output-api-key`);
-    const apiKeyExportId = pascalCase(`${this.props.apiName}-${apiKeyOutputId}`);
+    const apiKeyOutputId = pascalCase(`${this.props.apiName}-output-api-key`);
     new CfnOutput(this, apiKeyOutputId, {
-      exportName: apiKeyExportId,
+      exportName: apiKeyOutputId,
       value: this.apiKey,
     });
   }
