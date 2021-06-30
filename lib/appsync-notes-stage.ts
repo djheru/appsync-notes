@@ -6,13 +6,13 @@ export class AppsyncNotesStage extends Stage {
   constructor(scope: Construct, id: string, props?: StageProps) {
     super(scope, id, props);
 
-    const appsyncNotesStackId = pascalCase(`stack`);
-    const stack = new AppsyncNotesStack(this, appsyncNotesStackId, {
+    const appsyncNotesStackId = pascalCase(`api-stack`);
+    const apiStack = new AppsyncNotesStack(this, appsyncNotesStackId, {
       stackName: appsyncNotesStackId,
       databaseUsername: 'appsyncadmin',
       apiName: pascalCase(`${id}`),
     });
 
-    Tags.of(stack).add('application', id);
+    Tags.of(apiStack).add('application', id);
   }
 }

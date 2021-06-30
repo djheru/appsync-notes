@@ -86,7 +86,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildVpc() {
-    const vpcId = 'Vpc';
+    const vpcId = pascalCase(`${this.props.apiName}-vpc`);
     this.vpc = new Vpc(this, vpcId, {
       enableDnsHostnames: true,
       enableDnsSupport: true,
@@ -95,12 +95,12 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildSecurityGroups() {
-    const connectToRdsProxySgId = pascalCase(`rds-proxy-sg`);
+    const connectToRdsProxySgId = pascalCase(`${this.props.apiName}-rds-proxy-sg`);
     this.connectToRdsProxySg = new SecurityGroup(this, connectToRdsProxySgId, {
       vpc: this.vpc,
     });
 
-    const connectToRdsDbSgId = pascalCase(`rds-db-sg`);
+    const connectToRdsDbSgId = pascalCase(`${this.props.apiName}-rds-db-sg`);
     this.connectToRdsDbSg = new SecurityGroup(this, connectToRdsDbSgId, {
       vpc: this.vpc,
     });
@@ -118,7 +118,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildBastionHost() {
-    const bastionHostId = pascalCase(`bastion-host`);
+    const bastionHostId = pascalCase(`${this.props.apiName}-bastion-host`);
     this.bastionHost = new BastionHostLinux(this, bastionHostId, {
       vpc: this.vpc,
       instanceName: bastionHostId,
@@ -128,7 +128,7 @@ export class AppsyncNotesStack extends Stack {
       securityGroup: this.connectToRdsProxySg,
     });
 
-    this.bastionHost.allowSshAccessFrom(Peer.anyIpv4())
+    this.bastionHost.allowSshAccessFrom(Peer.anyIpv4());
 
     const bastionHostOutputId = pascalCase(`output-bastion-hostname`);
     new CfnOutput(this, bastionHostOutputId, {
@@ -137,8 +137,8 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseCredentialsSecret() {
-    const databaseCredentialsSecretId = pascalCase('db-secret');
-    this.databaseCredentialsSecretName = pascalCase(`${this.id}-${databaseCredentialsSecretId}`);
+    const databaseCredentialsSecretId = pascalCase(`${this.props.apiName}-db-secret`);
+    this.databaseCredentialsSecretName = pascalCase(`${this.props.apiName}-${databaseCredentialsSecretId}`);
     this.databaseCredentialsSecret = new Secret(this, databaseCredentialsSecretId, {
       secretName: this.databaseCredentialsSecretName,
       generateSecretString: {
@@ -151,7 +151,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseInstance() {
-    const databaseInstanceId = pascalCase(`db-instance`);
+    const databaseInstanceId = pascalCase(`${this.props.apiName}-db-instance`);
     this.databaseInstance = new DatabaseInstance(this, databaseInstanceId, {
       deletionProtection: this.props.deletionProtection || false,
       removalPolicy: this.props.removalPolicy || RemovalPolicy.DESTROY,
@@ -171,7 +171,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseProxy() {
-    const databaseProxyId = pascalCase(`db-proxy`);
+    const databaseProxyId = pascalCase(`${this.props.apiName}-db-proxy`);
     this.databaseProxy = this.databaseInstance.addProxy(databaseProxyId, {
       secrets: [this.databaseCredentialsSecret],
       debugLogging: true,
@@ -198,7 +198,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildLambdaFunction() {
-    const lambdaFunctionId = pascalCase(`datasource`);
+    const lambdaFunctionId = pascalCase(`${this.props.apiName}-datasource`);
     const lambdaFunctionName = pascalCase(`${this.props.apiName}-${lambdaFunctionId}`);
     this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
       functionName: lambdaFunctionName,
@@ -216,7 +216,7 @@ export class AppsyncNotesStack extends Stack {
   }
 
   private buildGraphqlApi() {
-    const apiId = pascalCase(`graphql-api`);
+    const apiId = pascalCase(`${this.props.apiName}-graphql-api`);
     this.api = new GraphqlApi(this, apiId, {
       name: this.props.apiName,
       schema: Schema.fromAsset('graphql/schema.graphql'),
@@ -234,7 +234,7 @@ export class AppsyncNotesStack extends Stack {
     this.apiUrl = this.api.graphqlUrl;
     this.apiKey = this.api.apiKey || '';
 
-    const apiDatasourceId = pascalCase(`graphql-datasource`);
+    const apiDatasourceId = pascalCase(`${this.props.apiName}-graphql-datasource`);
     const datasource = this.api.addLambdaDataSource(apiDatasourceId, this.lambdaFunction);
 
     const resolvers = [
@@ -249,15 +249,15 @@ export class AppsyncNotesStack extends Stack {
       datasource.createResolver(resolver);
     });
 
-    const urlOutputId = pascalCase(`output-url`);
-    const urlExportId = pascalCase(`${this.id}-${urlOutputId}`);
+    const urlOutputId = pascalCase(`${this.props.apiName}-output-url`);
+    const urlExportId = pascalCase(`${this.props.apiName}-${urlOutputId}`);
     new CfnOutput(this, urlOutputId, {
       exportName: urlExportId,
       value: this.apiUrl,
     });
 
     const apiKeyOutputId = pascalCase(`output-api-key`);
-    const apiKeyExportId = pascalCase(`${this.id}-${apiKeyOutputId}`);
+    const apiKeyExportId = pascalCase(`${this.props.apiName}-${apiKeyOutputId}`);
     new CfnOutput(this, apiKeyOutputId, {
       exportName: apiKeyExportId,
       value: this.apiKey,

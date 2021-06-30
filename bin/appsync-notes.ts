@@ -18,7 +18,7 @@ const env = { account, region };
 
 const app = new cdk.App();
 
-const baseId = pascalCase(`${repo}-${stage}`);
+const baseId = `${repo}-${stage}`;
 
 const pipelineStackId = pascalCase(`${baseId}-pipeline`);
 const pipelineStack = new PipelineStack(app, pipelineStackId, {
@@ -28,7 +28,7 @@ const pipelineStack = new PipelineStack(app, pipelineStackId, {
   owner,
 });
 
-const applicationStageId = `${baseId}`;
+const applicationStageId = pascalCase(`${baseId}`);
 const applicationStage = new AppsyncNotesStage(app, applicationStageId, { env });
 
 pipelineStack.registerApplicationStage({ stage: applicationStage });
