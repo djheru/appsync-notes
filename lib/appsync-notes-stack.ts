@@ -13,6 +13,7 @@ import {
   InstanceClass,
   InstanceSize,
   InstanceType,
+  Peer,
   Port,
   SecurityGroup,
   SubnetType,
@@ -126,6 +127,8 @@ export class AppsyncNotesStack extends Stack {
       },
       securityGroup: this.connectToRdsProxySg,
     });
+
+    this.bastionHost.allowSshAccessFrom(Peer.anyIpv4())
 
     const bastionHostOutputId = pascalCase(`output-bastion-hostname`);
     new CfnOutput(this, bastionHostOutputId, {

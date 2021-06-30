@@ -13,7 +13,8 @@ fi
 # Set vars
 stack="$1"
 ssh_key="$2"
-endpoint_query=$(echo "DBInstances[?contains(Endpoint.Address, \`$stack\`)].{E:Endpoint}[0].E.Address")
+db_identifier=$(echo $stack | tr "[:upper:]" "[:lower:]")db
+
 
 if [[ ! -f "$ssh_key" ]] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} SSH Key not found. Usage: yarn db-tunnel stack-name ./path/to/private/key\n\n"
@@ -27,7 +28,8 @@ fi
 
 echo "${GREEN_ON}√${COLOR_OFF} Retrieving RDS DB Endpoint"
 export RDS_ENDPOINT=$(aws rds describe-db-instances \
-  --query "$(echo $endpoint_query)" | tr -d '"')
+  --db-instance-identifier $db_identifier \
+  --query "DBInstances[0].Endpoint.Address" | tr -d '"')
 if [ $RDS_ENDPOINT == "null" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the RDS Endpoint"
   exit 1
@@ -78,9 +80,9 @@ aws ec2-instance-connect send-ssh-public-key \
 
 echo -e "\n\n${GREEN_ON}√ Opening SSH Tunnel!${COLOR_OFF}"
 echo "You may now connect to the remote database using SSH tunneling"
-echo "RDS Endpoint: $RDS_ENDPOINT"
+echo "RDS Endpoint: ${GREEN_ON}$RDS_ENDPOINT${COLOR_OFF}"
 echo "RDS Credentials: From Secrets Manager"
-echo "SSH Tunneling Host: $BASTION_IP_ADDRESS"
-echo "SSH Tunneling Username: ec2-user"
-echo "SSH Tunneling key: $ssh_key"
+echo "SSH Tunneling Host: ${GREEN_ON}$BASTION_IP_ADDRESS${COLOR_OFF}"
+echo "SSH Tunneling Username: ${GREEN_ON}ec2-user${COLOR_OFF}"
+echo "SSH Tunneling key: ${GREEN_ON}$ssh_key${COLOR_OFF}"
 echo "You must connect within 60 seconds"
