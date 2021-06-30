@@ -202,9 +202,8 @@ export class AppsyncNotesStack extends Stack {
 
   buildLambdaFunction() {
     const lambdaFunctionId = pascalCase(`${this.props.apiName}-datasource`);
-    const lambdaFunctionName = pascalCase(`${this.props.apiName}-${lambdaFunctionId}`);
     this.lambdaFunction = new NodejsFunction(this, lambdaFunctionId, {
-      functionName: lambdaFunctionName,
+      functionName: lambdaFunctionId,
       runtime: Runtime.NODEJS_12_X,
       entry: 'src/handler.ts',
       handler: 'handler',
