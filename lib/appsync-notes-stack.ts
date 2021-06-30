@@ -158,9 +158,9 @@ export class AppsyncNotesStack extends Stack {
       removalPolicy: this.props.removalPolicy || RemovalPolicy.DESTROY,
       databaseName: this.props.defaultDatabaseName || 'notes',
       engine: DatabaseInstanceEngine.postgres({
-        version: PostgresEngineVersion.VER_12_6,
+        version: PostgresEngineVersion.VER_11,
       }),
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
+      instanceType: InstanceType.of(InstanceClass.T2, InstanceSize.MICRO),
       instanceIdentifier: pascalCase(`${this.props.apiName}-db`),
       credentials: Credentials.fromSecret(this.databaseCredentialsSecret),
       vpc: this.vpc,
