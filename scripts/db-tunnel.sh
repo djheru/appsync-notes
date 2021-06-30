@@ -13,7 +13,7 @@ fi
 # Set vars
 stack="$1"
 ssh_key="$2"
-db_identifier=$(echo $stack | tr "[:upper:]" "[:lower:]")db
+db_identifier=$(tr "[:upper:]" "[:lower:]" <<< "$stack")db
 
 
 if [[ ! -f "$ssh_key" ]] ; then

@@ -138,9 +138,8 @@ export class AppsyncNotesStack extends Stack {
   }
 
   buildDatabaseCredentialsSecret() {
-    const databaseCredentialsSecretId = pascalCase(`${this.props.apiName}-db-secret`);
-    this.databaseCredentialsSecretName = pascalCase(`${this.props.apiName}-${databaseCredentialsSecretId}`);
-    this.databaseCredentialsSecret = new Secret(this, databaseCredentialsSecretId, {
+    this.databaseCredentialsSecretName = pascalCase(`${this.props.apiName}-db-secret`);
+    this.databaseCredentialsSecret = new Secret(this, this.databaseCredentialsSecretName, {
       secretName: this.databaseCredentialsSecretName,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: this.props.databaseUsername }),
