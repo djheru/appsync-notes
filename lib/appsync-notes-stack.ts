@@ -31,7 +31,7 @@ import {
 } from '@aws-cdk/aws-rds';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
 import { pascalCase } from 'change-case';
-import { resolvers } from '../src/handler';
+import { resolverConfig } from '../src/handler';
 
 export interface AppsyncNotesStackProps extends StackProps {
   databaseUsername: string;
@@ -239,7 +239,7 @@ export class AppsyncNotesStack extends Stack {
     const apiDatasourceId = pascalCase(`${this.props.apiName}-graphql-datasource`);
     const datasource = this.api.addLambdaDataSource(apiDatasourceId, this.lambdaFunction);
 
-    resolvers.forEach((resolver) => {
+    resolverConfig.forEach((resolver) => {
       datasource.createResolver(resolver);
     });
 
