@@ -26,7 +26,7 @@ if [[ ! -f "$ssh_key.pub" ]] ; then
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving RDS DB Secret"
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving RDS DB Secret"
 export RDS_CREDENTIALS=$(aws secretsmanager get-secret-value \
   --secret-id "$stack"DbSecret \
   --query 'SecretString')
@@ -41,7 +41,7 @@ port=$(node -p "JSON.parse($RDS_CREDENTIALS).port")
 dbname=$(node -p "JSON.parse($RDS_CREDENTIALS).dbname")
 
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
 export BASTION_IP_ADDRESS=$(aws ec2 describe-instances \
   --filters "Name=tag-value,Values=$stack" \
   --query 'Reservations[0].Instances[0].PublicIpAddress' | tr -d '"')
@@ -50,7 +50,7 @@ if [ -z "$BASTION_IP_ADDRESS" ] ; then
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving the Bastion Host Instance ID"
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance ID"
 export INSTANCE_ID=$(aws ec2 describe-instances \
   --filters "Name=tag-value,Values=$stack" \
   --query 'Reservations[0].Instances[0].InstanceId' | tr -d '"')
@@ -60,7 +60,7 @@ if [ -z "$INSTANCE_ID" ] ; then
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving the Bastion Host Instance Availability Zone"
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance Availability Zone"
 export INSTANCE_AZ=$(aws ec2 describe-instances \
   --filters "Name=tag-value,Values=$stack" \
   --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' | tr -d '"')
@@ -69,14 +69,14 @@ if [ -z "$INSTANCE_AZ" ] ; then
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Retrieving the Bastion Host Region"
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Region"
 export INSTANCE_REGION=$(echo $INSTANCE_AZ | sed 's/.$//')
 if [ -z "$BASTION_IP_ADDRESS" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the Bastion Host Region"
   exit 1
 fi
 
-echo "${GREEN_ON}√${COLOR_OFF} Transferring the SSH key to the Bastion Host"
+echo "${GREEN_ON}✓${COLOR_OFF} Transferring the SSH key to the Bastion Host"
 aws ec2-instance-connect send-ssh-public-key \
   --region $INSTANCE_REGION \
   --instance-id $INSTANCE_ID \
@@ -88,16 +88,16 @@ aws ec2-instance-connect send-ssh-public-key \
 echo -e "\n"
 echo "${GREEN_ON}You may now connect to the remote database using SSH tunneling${COLOR_OFF}"
 echo -e "\n"
-echo "RDS Credentials: "
-echo "HOST: ${GREEN_ON}$host${COLOR_OFF}"
-echo "USERNAME: ${GREEN_ON}$user${COLOR_OFF}"
-echo "PASSWORD: ${GREEN_ON}$pass${COLOR_OFF}"
-echo "PORT: ${GREEN_ON}$port${COLOR_OFF}"
-echo "DB NAME: ${GREEN_ON}$dbname${COLOR_OFF}"
+echo "RDS HOST: ${GREEN_ON}$host${COLOR_OFF}"
+echo "RDS USERNAME: ${GREEN_ON}$user${COLOR_OFF}"
+echo "RDS PASSWORD: ${GREEN_ON}$pass${COLOR_OFF}"
+echo "RDS PORT: ${GREEN_ON}$port${COLOR_OFF}"
+echo "RDS DB NAME: ${GREEN_ON}$dbname${COLOR_OFF}"
 echo -e "\n"
-echo "SSH Tunneling Host: ${GREEN_ON}$BASTION_IP_ADDRESS${COLOR_OFF}"
-echo "SSH Tunneling Username: ${GREEN_ON}ec2-user${COLOR_OFF}"
-echo "SSH Tunneling key: ${GREEN_ON}$ssh_key${COLOR_OFF}"
+echo "SSH HOST: ${GREEN_ON}$BASTION_IP_ADDRESS${COLOR_OFF}"
+echo "SSH USER: ${GREEN_ON}ec2-user${COLOR_OFF}"
+echo "SSH KEY: ${GREEN_ON}$ssh_key${COLOR_OFF}"
 echo -e "\n"
 echo "You must connect within 60 seconds"
-echo "Don't worry if you're too slow, just run this script again ;-)"
+echo "Don't worry if you're too slow, just run this script again 😉"
+echo -e "\n"

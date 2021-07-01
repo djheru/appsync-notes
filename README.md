@@ -128,3 +128,29 @@ Example response
 - Application stack contains our resources for our application (lambdas, apis, dbs, vpcs, etc)
 
 ## Connect to DB via Bastion Host
+
+Typically, it's more convenient to use some type of GUI-based software to perform queries on the db.
+The problem is, the DB is in a private network, so we can't connect directly. Fortunately, we created
+an EC2 instance in our stack that does allow SSH access from the public internet, so we can connect
+to the instance, and then connect to the DB from there.
+
+We don't want to worry about managing SSH keys on the instance, so we'll use the `aws ec2-instance-connect send-ssh-public-key`
+CLI command. This will upload a key that you specify to the EC2 instance for a short time, allowing you to connect (assuming you have IAM permissions to do so)
+
+We've included a bash script to make this easier. Simply run the script with a command like `./scripts/db-tunnel.sh AppsyncNotesDev ~/.ssh/cdk_key` and the script will upload
+
+```shell
+You may now connect to the remote database using SSH tunneling
+
+
+RDS HOST: appsyncnotesdevdb.czahfmvf7ofn.us-east-1.rds.amazonaws.com
+RDS USERNAME: appsyncadmin
+RDS PASSWORD: AAAVf1MPTNxL32c2VWK8rim5RatWaIsB
+RDS PORT: 5432
+RDS DB NAME: notes
+
+
+SSH HOST: 54.9.62.33
+SSH USER: ec2-user
+SSH KEY: /Users/philipdamra/.ssh/cdk_key
+```
