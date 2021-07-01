@@ -41,29 +41,29 @@ port=$(node -p "JSON.parse($RDS_CREDENTIALS).port")
 dbname=$(node -p "JSON.parse($RDS_CREDENTIALS).dbname")
 
 
-echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
-export BASTION_IP_ADDRESS=$(aws ec2 describe-instances \
+export INSTANCE_DATA=$(aws ec2 describe-instances \
   --filters "Name=tag-value,Values=$stack" \
-  --query 'Reservations[0].Instances[0].PublicIpAddress' | tr -d '"')
+  --query 'Reservations[0].Instances[0]')
+
+node -p "($INSTANCE_DATA).PublicIpAddress"
+
+
+echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
+export BASTION_IP_ADDRESS=$(node -p "($INSTANCE_DATA).PublicIpAddress")
 if [ -z "$BASTION_IP_ADDRESS" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the Bastion Host IP Address"
   exit 1
 fi
 
 echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance ID"
-export INSTANCE_ID=$(aws ec2 describe-instances \
-  --filters "Name=tag-value,Values=$stack" \
-  --query 'Reservations[0].Instances[0].InstanceId' | tr -d '"')
-  
+export INSTANCE_ID=$(node -p "($INSTANCE_DATA).InstanceId")
 if [ -z "$INSTANCE_ID" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the Bastion Host Instance ID"
   exit 1
 fi
 
 echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance Availability Zone"
-export INSTANCE_AZ=$(aws ec2 describe-instances \
-  --filters "Name=tag-value,Values=$stack" \
-  --query 'Reservations[0].Instances[0].Placement.AvailabilityZone' | tr -d '"')
+export INSTANCE_AZ=$(node -p "($INSTANCE_DATA).Placement.AvailabilityZone")
 if [ -z "$INSTANCE_AZ" ] ; then
   echo -e "\n\n${RED_ON}✘ Error!${COLOR_OFF} Unable to determine the Bastion Host AZ"
   exit 1
