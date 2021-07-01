@@ -1,5 +1,10 @@
 import { AppSyncEvent } from './handler';
 
+export interface ResolverMapping {
+  typeName: string;
+  handler: (event: AppSyncEvent) => any;
+}
+
 export const listNotes = (event: AppSyncEvent) => {
   console.log({ listNotes: event });
   return null;
@@ -20,3 +25,13 @@ export const deleteNote = (event: AppSyncEvent) => {
   console.log({ deleteNote: event });
   return null;
 };
+
+const resolvers: Record<string, ResolverMapping> = {
+  listNotes: { typeName: 'Query', handler: listNotes },
+  getNoteById: { typeName: 'Query', handler: getNoteById },
+  createNote: { typeName: 'Mutation', handler: createNote },
+  updateNote: { typeName: 'Mutation', handler: updateNote },
+  deleteNote: { typeName: 'Mutation', handler: deleteNote },
+};
+
+export default resolvers;

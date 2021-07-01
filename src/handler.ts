@@ -1,17 +1,14 @@
 import { BaseResolverProps } from '@aws-cdk/aws-appsync';
-import { listNotes, getNoteById, createNote, updateNote, deleteNote } from './notes-api';
+import resolvers from './notes-api';
 
-export interface ResolverMapping {
-  typeName: string;
-  handler: (event: AppSyncEvent) => any;
-}
-
-const resolvers: Record<string, ResolverMapping> = {
-  listNotes: { typeName: 'Query', handler: listNotes },
-  getNoteById: { typeName: 'Query', handler: getNoteById },
-  createNote: { typeName: 'Mutation', handler: createNote },
-  updateNote: { typeName: 'Mutation', handler: updateNote },
-  deleteNote: { typeName: 'Mutation', handler: deleteNote },
+export type AppSyncEvent = {
+  info: {
+    fieldName: string;
+  };
+  arguments: {
+    note: Record<string, any>;
+    noteId: string;
+  };
 };
 
 export const resolverConfig = <BaseResolverProps[]>(
@@ -23,16 +20,6 @@ export const resolverConfig = <BaseResolverProps[]>(
     []
   )
 );
-
-export type AppSyncEvent = {
-  info: {
-    fieldName: string;
-  };
-  arguments: {
-    note: Record<string, any>;
-    noteId: string;
-  };
-};
 
 export const handler = async (event: AppSyncEvent) => {
   return resolvers.hasOwnProperty(event.info.fieldName)
