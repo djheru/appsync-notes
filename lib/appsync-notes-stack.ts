@@ -213,6 +213,7 @@ export class AppsyncNotesStack extends Stack {
         PROXY_ENDPOINT: this.databaseProxyEndpoint,
         RDS_SECRET_NAME: this.databaseCredentialsSecretName,
       },
+      timeout: Duration.seconds(60),
     });
     this.databaseCredentialsSecret.grantRead(this.lambdaFunction);
   }
