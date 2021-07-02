@@ -21,7 +21,7 @@ export const getConnection = async () => {
 
     connection = await createConnection({
       type: 'postgres',
-      host, //: process.env.PROXY_ENDPOINT,
+      host: process.env.PROXY_ENDPOINT,
       ssl: {
         ca: cert,
       },
