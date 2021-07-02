@@ -16,12 +16,12 @@ export const getConnection = async () => {
   try {
     console.log(`Retrieving secret: ${SecretId}`);
     const secret = await secretsManager.getSecretValue({ SecretId }).promise();
-    const { username, password } = JSON.parse(<string>secret.SecretString);
+    const { username, password, host } = JSON.parse(<string>secret.SecretString);
     console.log(`Obtained DB credentials: ${username}`);
 
     connection = await createConnection({
       type: 'postgres',
-      host: process.env.PROXY_ENDPOINT,
+      host, //: process.env.PROXY_ENDPOINT,
       ssl: {
         ca: cert,
       },
