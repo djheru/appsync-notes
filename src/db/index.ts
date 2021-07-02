@@ -27,7 +27,7 @@ export const getConnection = async () => {
       },
       username,
       password,
-      database: 'blog',
+      database: 'notes',
       entities: [Note],
       synchronize: true,
     });
