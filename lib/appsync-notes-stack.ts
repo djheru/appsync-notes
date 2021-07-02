@@ -127,7 +127,7 @@ export class AppsyncNotesStack extends Stack {
       subnetSelection: {
         subnetType: SubnetType.PUBLIC,
       },
-      securityGroup: this.connectToRdsProxySg,
+      securityGroup: this.connectToRdsDbSg,
     });
 
     this.bastionHost.allowSshAccessFrom(Peer.anyIpv4());
