@@ -41,7 +41,8 @@ export const createNote = async (event: AppSyncEvent) => {
     console.log('createNote event: %j', event);
     await getConnection();
     const repository = getRepository(Note);
-    const note = await repository.create(<Note>event.arguments.note);
+    const note = repository.create(<Note>event.arguments.note);
+    await repository.save(note);
     console.log('createNote result: %j', note);
     return note;
   } catch (e) {
