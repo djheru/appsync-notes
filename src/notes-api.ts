@@ -57,7 +57,8 @@ export const updateNote = async (event: AppSyncEvent) => {
     const { id, title, content } = event.arguments.note;
     await getConnection();
     const repository = getRepository(Note);
-    const result = repository.update(id, { title, content });
+    await repository.update(id, { title, content });
+    const result = await repository.findOne(id);
     console.log('updateNote result: %j', result);
     return result;
   } catch (e) {
@@ -71,9 +72,9 @@ export const deleteNote = async (event: AppSyncEvent) => {
     console.log('deleteNote event: %j', event);
     await getConnection();
     const repository = getRepository(Note);
-    const result = repository.delete(event.arguments.noteId);
+    const result = await repository.delete(event.arguments.noteId);
     console.log('deleteNote result: %j', result);
-    return result;
+    return result.affected ? 'success' : 'failure';
   } catch (e) {
     console.log('deleteNote error: ', e);
     return null;
