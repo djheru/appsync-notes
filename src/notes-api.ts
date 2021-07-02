@@ -1,29 +1,82 @@
 import { AppSyncEvent } from './handler';
+import { getRepository } from 'typeorm';
+import { getConnection } from './db';
+import { Note } from './entities/note.entity';
 
 export interface ResolverMapping {
   typeName: string;
   handler: (event: AppSyncEvent) => any;
 }
 
-export const listNotes = (event: AppSyncEvent) => {
-  console.log({ listNotes: event });
-  return null;
+export const listNotes = async (event: AppSyncEvent) => {
+  try {
+    console.log('listNotes event: %j', event);
+    await getConnection();
+    const repository = getRepository(Note);
+    const notes = await repository.find();
+    console.log('listNotes result: %j', notes);
+    return notes;
+  } catch (e) {
+    console.log('listNotes error: ', e);
+    return null;
+  }
 };
-export const getNoteById = (event: AppSyncEvent) => {
-  console.log({ getNoteById: event });
-  return null;
+
+export const getNoteById = async (event: AppSyncEvent) => {
+  try {
+    console.log('getNoteById event: %j', event);
+    await getConnection();
+    const repository = getRepository(Note);
+    const note = await repository.findOne(event.arguments.noteId);
+    console.log('getNoteById result: %j', note);
+    return note;
+  } catch (e) {
+    console.log('getNoteById error: ', e);
+    return null;
+  }
 };
-export const createNote = (event: AppSyncEvent) => {
-  console.log({ createNote: event });
-  return null;
+
+export const createNote = async (event: AppSyncEvent) => {
+  try {
+    console.log('createNote event: %j', event);
+    await getConnection();
+    const repository = getRepository(Note);
+    const note = await repository.create(<Note>event.arguments.note);
+    console.log('createNote result: %j', note);
+    return note;
+  } catch (e) {
+    console.log('createNote error: ', e);
+    return null;
+  }
 };
-export const updateNote = (event: AppSyncEvent) => {
-  console.log({ updateNote: event });
-  return null;
+
+export const updateNote = async (event: AppSyncEvent) => {
+  try {
+    console.log('updateNote event: %j', event);
+    const { id, title, content } = event.arguments.note;
+    await getConnection();
+    const repository = getRepository(Note);
+    const result = repository.update(id, { title, content });
+    console.log('updateNote result: %j', result);
+    return result;
+  } catch (e) {
+    console.log('updateNote error: ', e);
+    return null;
+  }
 };
-export const deleteNote = (event: AppSyncEvent) => {
-  console.log({ deleteNote: event });
-  return null;
+
+export const deleteNote = async (event: AppSyncEvent) => {
+  try {
+    console.log('deleteNote event: %j', event);
+    await getConnection();
+    const repository = getRepository(Note);
+    const result = repository.delete(event.arguments.noteId);
+    console.log('deleteNote result: %j', result);
+    return result;
+  } catch (e) {
+    console.log('deleteNote error: ', e);
+    return null;
+  }
 };
 
 const resolvers: Record<string, ResolverMapping> = {

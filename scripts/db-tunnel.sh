@@ -45,9 +45,6 @@ export INSTANCE_DATA=$(aws ec2 describe-instances \
   --filters "Name=tag-value,Values=$stack" \
   --query 'Reservations[0].Instances[0]')
 
-node -p "($INSTANCE_DATA).PublicIpAddress"
-
-
 echo "${GREEN_ON}✓${COLOR_OFF} Retrieving the Bastion Host Instance IP Address"
 export BASTION_IP_ADDRESS=$(node -p "($INSTANCE_DATA).PublicIpAddress")
 if [ -z "$BASTION_IP_ADDRESS" ] ; then

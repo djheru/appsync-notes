@@ -6,7 +6,7 @@ export type AppSyncEvent = {
     fieldName: string;
   };
   arguments: {
-    note: Record<string, any>;
+    note: Record<'id' | 'title' | 'content', string>;
     noteId: string;
   };
 };
