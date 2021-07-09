@@ -7,7 +7,7 @@ import {
   RemovalPolicy,
   Stack,
   StackProps,
-} from '@aws-cdk/aws-codestarnotifications/node_modules/@aws-cdk/core';
+} from '@aws-cdk/core';
 import { AttributeType, BillingMode, Table } from '@aws-cdk/aws-dynamodb';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
