@@ -11,4 +11,14 @@ export class Note {
   @Column({ type: 'text' })
   @Index({ fulltext: true })
   content: string;
+
+  @Column({ type: 'boolean' })
+  completed: boolean;
 }
+
+export type NoteType = {
+  id: string;
+  title: string;
+  content: string;
+  completed: boolean;
+};

@@ -1,20 +1,33 @@
+import { DynamoDB } from 'aws-sdk';
 import { AppSyncEvent } from './handler';
-import { getRepository } from 'typeorm';
-import { getConnection } from './db';
-import { Note } from './entities/note.entity';
+import { UpdateItemInput } from 'aws-sdk/clients/dynamodb';
 
+const docClient = new DynamoDB.DocumentClient();
+
+const { NOTES_TABLE: TableName = '' } = process.env;
 export interface ResolverMapping {
   typeName: string;
   handler: (event: AppSyncEvent) => any;
 }
 
+type UpdateParams = {
+  TableName: string;
+  Key: string | {};
+  ExpressionAttributeValues: any;
+  ExpressionAttributeNames: any;
+  UpdateExpression: string;
+  ReturnValues: string;
+};
+
 export const listNotes = async (event: AppSyncEvent) => {
   try {
     console.log('listNotes event: %j', event);
-    await getConnection();
-    const repository = getRepository(Note);
-    const notes = await repository.find();
-    console.log('listNotes result: %j', notes);
+    const params = {
+      TableName,
+    };
+    const result = await docClient.scan(params).promise();
+    const { Items: notes } = result;
+    console.log('listNotes result: %j', result);
     return notes;
   } catch (e) {
     console.log('listNotes error: ', e);
@@ -25,10 +38,16 @@ export const listNotes = async (event: AppSyncEvent) => {
 export const getNoteById = async (event: AppSyncEvent) => {
   try {
     console.log('getNoteById event: %j', event);
-    await getConnection();
-    const repository = getRepository(Note);
-    const note = await repository.findOne(event.arguments.noteId);
-    console.log('getNoteById result: %j', note);
+    const { noteId: id } = event.arguments;
+    const params = {
+      TableName,
+      Key: {
+        id,
+      },
+    };
+    const result = await docClient.get(params).promise();
+    const { Item: note } = result;
+    console.log('getNoteById result: %j', result);
     return note;
   } catch (e) {
     console.log('getNoteById error: ', e);
@@ -39,11 +58,13 @@ export const getNoteById = async (event: AppSyncEvent) => {
 export const createNote = async (event: AppSyncEvent) => {
   try {
     console.log('createNote event: %j', event);
-    await getConnection();
-    const repository = getRepository(Note);
-    const note = repository.create(<Note>event.arguments.note);
-    await repository.save(note);
-    console.log('createNote result: %j', note);
+    const { note } = event.arguments;
+    const params = {
+      Item: note,
+      TableName,
+    };
+    const result = await docClient.put(params).promise();
+    console.log('createNote result: %j', result);
     return note;
   } catch (e) {
     console.log('createNote error: ', e);
@@ -54,13 +75,32 @@ export const createNote = async (event: AppSyncEvent) => {
 export const updateNote = async (event: AppSyncEvent) => {
   try {
     console.log('updateNote event: %j', event);
-    const { id, title, content } = event.arguments.note;
-    await getConnection();
-    const repository = getRepository(Note);
-    await repository.update(id, { title, content });
-    const result = await repository.findOne(id);
+    const { note } = event.arguments;
+    let params: UpdateParams = {
+      TableName,
+      Key: {
+        id: note.id,
+      },
+      ExpressionAttributeValues: {},
+      ExpressionAttributeNames: {},
+      UpdateExpression: '',
+      ReturnValues: 'UPDATED_NEW',
+    };
+    let prefix = 'set ';
+    const attributes = Object.keys(note);
+    for (let i = 0; i < attributes.length; i++) {
+      let attribute = attributes[i];
+      if (attribute !== 'id') {
+        params['UpdateExpression'] += `${prefix}#${attribute} = :${attribute}`;
+        params['ExpressionAttributeValues'][`:${attribute}`] = (note as Record<string, any>)[attribute];
+        params['ExpressionAttributeNames'][`#${attribute}`] = attribute;
+        prefix = ', ';
+      }
+    }
+    console.log('updateNote params: %j', params);
+    const result = await docClient.update(<UpdateItemInput>params).promise();
     console.log('updateNote result: %j', result);
-    return result;
+    return note;
   } catch (e) {
     console.log('updateNote error: ', e);
     return null;
@@ -70,11 +110,16 @@ export const updateNote = async (event: AppSyncEvent) => {
 export const deleteNote = async (event: AppSyncEvent) => {
   try {
     console.log('deleteNote event: %j', event);
-    await getConnection();
-    const repository = getRepository(Note);
-    const result = await repository.delete(event.arguments.noteId);
+    const { noteId: id } = event.arguments;
+    const params = {
+      TableName,
+      Key: {
+        id,
+      },
+    };
+    const result = await docClient.delete(params).promise();
     console.log('deleteNote result: %j', result);
-    return result.affected ? 'success' : 'failure';
+    return id;
   } catch (e) {
     console.log('deleteNote error: ', e);
     return null;
@@ -82,11 +127,11 @@ export const deleteNote = async (event: AppSyncEvent) => {
 };
 
 const resolvers: Record<string, ResolverMapping> = {
-  listNotes: { typeName: 'Query', handler: listNotes },
   getNoteById: { typeName: 'Query', handler: getNoteById },
   createNote: { typeName: 'Mutation', handler: createNote },
-  updateNote: { typeName: 'Mutation', handler: updateNote },
+  listNotes: { typeName: 'Query', handler: listNotes },
   deleteNote: { typeName: 'Mutation', handler: deleteNote },
+  updateNote: { typeName: 'Mutation', handler: updateNote },
 };
 
 export default resolvers;

@@ -1,4 +1,5 @@
 import { BaseResolverProps } from '@aws-cdk/aws-appsync';
+import { Note } from './entities/note.entity';
 import resolvers from './notes-api';
 
 export type AppSyncEvent = {
@@ -6,7 +7,7 @@ export type AppSyncEvent = {
     fieldName: string;
   };
   arguments: {
-    note: Record<'id' | 'title' | 'content', string>;
+    note: Note;
     noteId: string;
   };
 };
