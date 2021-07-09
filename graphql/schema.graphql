@@ -2,18 +2,21 @@ type Note {
   id: String!
   title: String!
   content: String!
+  completed: Boolean!
 }
 
 input CreateNoteInput {
   id: String
   title: String!
   content: String!
+  completed: Boolean!
 }
 
 input UpdateNoteInput {
   id: String!
   title: String
   content: String
+  completed: Boolean
 }
 
 type Query {
