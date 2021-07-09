@@ -46,6 +46,7 @@ export class AppsyncNotesStack extends Stack {
   buildResources() {
     this.buildLambdaFunction();
     this.buildGraphqlApi();
+    this.buildTable();
   }
 
   buildLambdaFunction() {
